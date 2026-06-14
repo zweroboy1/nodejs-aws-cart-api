@@ -1,13 +1,18 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
-CREATE TYPE cart_status AS ENUM ('OPEN', 'ORDERED');
+CREATE TABLE IF NOT EXISTS users (
+  id       UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  name     VARCHAR(50) NOT NULL UNIQUE,
+  password VARCHAR(255) NOT NULL,
+  email    VARCHAR(255)
+);
 
 CREATE TABLE IF NOT EXISTS carts (
   id         UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id    UUID NOT NULL,
   created_at DATE NOT NULL DEFAULT CURRENT_DATE,
   updated_at DATE NOT NULL DEFAULT CURRENT_DATE,
-  status     cart_status NOT NULL DEFAULT 'OPEN'
+  status     VARCHAR(10) NOT NULL DEFAULT 'OPEN' CHECK (status IN ('OPEN', 'ORDERED'))
 );
 
 CREATE TABLE IF NOT EXISTS cart_items (
@@ -18,12 +23,15 @@ CREATE TABLE IF NOT EXISTS cart_items (
   PRIMARY KEY (cart_id, product_id)
 );
 
--- Test data
-INSERT INTO carts (id, user_id, created_at, updated_at, status) VALUES
-  ('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', 'b0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', CURRENT_DATE, CURRENT_DATE, 'OPEN'),
-  ('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a12', 'b0eebc99-9c0b-4ef8-bb6d-6bb9bd380a12', CURRENT_DATE, CURRENT_DATE, 'ORDERED');
+CREATE TABLE IF NOT EXISTS orders (
+  id       UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id  UUID NOT NULL,
+  cart_id  UUID REFERENCES carts(id),
+  payment  JSONB NOT NULL DEFAULT '{}',
+  delivery JSONB NOT NULL DEFAULT '{}',
+  comments TEXT NOT NULL DEFAULT '',
+  status   VARCHAR(20) NOT NULL DEFAULT 'OPEN',
+  total    NUMERIC(10,2) NOT NULL DEFAULT 0
+);
 
-INSERT INTO cart_items (cart_id, product_id, count) VALUES
-  ('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', 'c0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', 2),
-  ('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', 'c0eebc99-9c0b-4ef8-bb6d-6bb9bd380a12', 1),
-  ('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a12', 'c0eebc99-9c0b-4ef8-bb6d-6bb9bd380a13', 3);
+CREATE INDEX IF NOT EXISTS idx_orders_user_id ON orders (user_id);

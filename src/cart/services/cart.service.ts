@@ -58,6 +58,10 @@ export class CartService {
         return this.cartRepository.findOne({ where: { id: cart.id } }) as Promise<CartEntity>;
     }
 
+    async findById(cartId: string): Promise<CartEntity | null> {
+        return this.cartRepository.findOne({ where: { id: cartId } });
+    }
+
     async removeByUserId(userId: string): Promise<void> {
         const cart = await this.findByUserId(userId);
         if (cart) {

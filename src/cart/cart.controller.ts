@@ -10,18 +10,21 @@ import {
     HttpCode,
     BadRequestException,
 } from '@nestjs/common';
+import { InjectDataSource } from '@nestjs/typeorm';
+import { DataSource } from 'typeorm';
 import { BasicAuthGuard } from '../auth';
-import { Order, OrderService } from '../order';
+import { OrderService } from '../order';
 import { AppRequest, getUserIdFromRequest } from '../shared';
 import { CartService } from './services';
+import { CartEntity } from './entities/cart.entity';
 import { CreateOrderDto, PutCartPayload } from '../order/type';
+import { OrderEntity } from '../order/entities/order.entity';
 
 @Controller('api/profile/cart')
 export class CartController {
     constructor(
         private readonly cartService: CartService,
-        private readonly orderService: OrderService,
-    ) { }
+        private readonly orderService: OrderService, @InjectDataSource() private readonly dataSource: DataSource,) { }
 
     // @UseGuards(JwtAuthGuard)
     @UseGuards(BasicAuthGuard)
@@ -55,7 +58,6 @@ export class CartController {
         await this.cartService.removeByUserId(getUserIdFromRequest(req));
     }
 
-    // @UseGuards(JwtAuthGuard)
     @UseGuards(BasicAuthGuard)
     @Put('order')
     async checkout(@Req() req: AppRequest, @Body() body: CreateOrderDto) {
@@ -66,25 +68,56 @@ export class CartController {
             throw new BadRequestException('Cart is empty');
         }
 
-        const { id: cartId, items } = cart;
-        const order = this.orderService.create({
-            userId,
-            cartId,
-            items: items.map(({ product_id, count }) => ({
-                productId: product_id,
-                count,
-            })),
-            address: body.address,
-            total: 0,
+        const order = await this.dataSource.transaction(async (manager) => {
+            const total = cart.items.reduce(
+                (sum, { product, count }) => sum + (product?.price || 0) * count,
+                0,
+            );
+
+            const newOrder = manager.create(OrderEntity, {
+                user_id: userId,
+                cart_id: cart.id,
+                delivery: body.address,
+                total,
+                status: 'ORDERED',
+                comments: '',
+                payment: {},
+            });
+            await manager.save(OrderEntity, newOrder);
+
+            await manager.update(CartEntity, cart.id, { status: 'ORDERED' as any });
+
+            return newOrder;
         });
-        await this.cartService.removeByUserId(userId);
 
         return { order };
     }
 
     @UseGuards(BasicAuthGuard)
     @Get('order')
-    getOrder(): Order[] {
-        return this.orderService.getAll();
+    async getOrder() {
+        const orders = await this.orderService.getAll();
+        return Promise.all(
+            orders.map(async (order) => {
+                const cart = order.cart_id
+                    ? await this.cartService.findById(order.cart_id)
+                    : null;
+                return {
+                    id: order.id,
+                    address: order.delivery,
+                    items: (cart?.items ?? []).map(({ product_id, count }) => ({
+                        productId: product_id,
+                        count,
+                    })),
+                    statusHistory: [
+                        {
+                            status: order.status,
+                            timestamp: Date.now(),
+                            comment: order.comments ?? '',
+                        },
+                    ],
+                };
+            }),
+        );
     }
 }
