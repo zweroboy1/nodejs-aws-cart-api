@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS cart_items (
   cart_id    UUID REFERENCES carts(id) ON DELETE CASCADE,
   product_id UUID NOT NULL,
   count      INTEGER NOT NULL DEFAULT 1,
+  product    JSONB NOT NULL DEFAULT '{}',
   PRIMARY KEY (cart_id, product_id)
 );
 
