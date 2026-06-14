@@ -8,6 +8,8 @@
   "scripts": {
     "prebuild": "rimraf dist",
     "build": "nest build",
+    "build:lambda": "nest build --webpack --webpackPath webpack-lambda.config.js",
+    "deploy": "npm run build:lambda && node deploy.js",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
     "start:dev": "nest start --watch",
@@ -27,14 +29,17 @@
     "@nestjs/jwt": "^10.1.0",
     "@nestjs/passport": "^10.0.0",
     "@nestjs/platform-express": "^10.0.3",
+    "@nestjs/typeorm": "^11.0.1",
     "@vendia/serverless-express": "^4.12.6",
     "helmet": "^7.0.0",
     "passport": "^0.6.0",
     "passport-http": "^0.3.0",
     "passport-jwt": "^4.0.1",
     "passport-local": "^1.0.0",
+    "pg": "^8.21.0",
     "reflect-metadata": "^0.1.13",
-    "rxjs": "^7.8.1"
+    "rxjs": "^7.8.1",
+    "typeorm": "^0.3.30"
   },
   "devDependencies": {
     "@nestjs/cli": "^10.0.3",
@@ -46,6 +51,7 @@
     "@types/node": "^20.19.43",
     "@types/passport-jwt": "^3.0.8",
     "@types/passport-local": "^1.0.35",
+    "@types/pg": "^8.20.0",
     "@types/supertest": "^2.0.12",
     "@typescript-eslint/eslint-plugin": "5.60.0",
     "@typescript-eslint/parser": "5.60.0",

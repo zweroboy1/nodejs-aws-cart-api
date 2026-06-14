@@ -1,4 +1,4 @@
-module.exports = (options, webpack) => {
+const webpackLambda = (options, webpack) => {
   return {
     ...options,
     entry: './src/lambda.ts',
@@ -23,3 +23,4 @@ module.exports = (options, webpack) => {
     ],
   };
 };
+module.exports = webpackLambda;
