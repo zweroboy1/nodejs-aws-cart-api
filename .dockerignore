@@ -1,0 +1,41 @@
+# node_modules — installed by npm inside the container, no need to copy from host;
+# also the largest directory (hundreds of MB), excluding it drastically reduces build context
+node_modules
+
+# dist — compiled output is generated inside the container by `npm run build`;
+# host-compiled artifacts may differ and should not leak into the image
+dist
+
+# .git — version control history is irrelevant at runtime and can expose
+# sensitive commit metadata inside the image
+.git
+
+# cdk — AWS CDK infrastructure code is only needed for deployment tooling,
+# not for running the application
+cdk
+
+# test / coverage — test files and coverage reports are not needed in production
+test
+coverage
+.nyc_output
+
+# Logs — log files from local development should not be included in the image
+logs
+*.log
+npm-debug.log*
+
+# Environment files — secrets must be injected at runtime via environment variables,
+# never baked into the image
+.env
+*.env
+
+# OS artefacts — macOS metadata files, no value in a Linux container
+.DS_Store
+
+# IDE / editor configs — tooling configuration is irrelevant inside the container
+.vscode
+.idea
+*.sublime-workspace
+
+# SQL scripts — database migrations/seeds are run separately, not inside the app container
+sql
